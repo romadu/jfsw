@@ -28,6 +28,15 @@ You will require game data from an original release of Shadow Warrior. Refer to 
 documentation on my website](https://www.jonof.id.au/jfsw/readme.html) on what
 releases are suitable and where to place the SW.GRP file for JFShadowWarrior to find it.
 
+Project Scope and Objectives
+----------------------------
+
+1. Remain usable on modern hardware and operating systems of modest capability.
+2. Be playable with a game controller, ideally without needing to reach for a keyboard at all except for entering savegame names.
+3. Remain faithful to the original DOS games while tastefully enhancing the experience for modern sensibilities.
+
+People who want a wildly divergent, bells-and-whistles enhanced experience should probably investigate other Shadow Warrior ports.
+
 Compilation
 -----------
 
