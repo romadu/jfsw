@@ -1,3 +1,11 @@
+How to make for ArkOS
+======================
+```
+  export CXXFLAGS="$CXXFLAGS -fPIC"
+  export CFLAGS="$CFLAGS -fPIC"
+  make -j6 USE_OPENGL=USE_GLES2 RELEASE=1 WITHOUT_GTK=1
+```
+
 JonoF's Shadow Warrior Port
 ===========================
 by Jonathon Fowler, with contributions by Ken Silverman and others
