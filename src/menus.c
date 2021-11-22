@@ -361,7 +361,7 @@ MenuItem joybuttons_i[MAXJOYSTICKBUTTONPAGES][20] =
         {DefNone}
         },
     };
-MenuGroup joybuttonssetupgroup = {65, 5, "^Joystick Setup", joybuttons_i[0], pic_newgametitl, 0, m_defshade, NULL, NULL, 0};
+MenuGroup joybuttonssetupgroup = {65, 5, "^Cont'ler Setup", joybuttons_i[0], pic_newgametitl, 0, m_defshade, NULL, NULL, 0};
 
 static char JoystickAxisName[64];
 static char JoystickAxisPageName[64];
@@ -397,7 +397,7 @@ MenuItem joyaxes_i[] =
 
     {DefNone},
     };
-MenuGroup joyaxessetupgroup = {65, 5, "^Joystick Axes", joyaxes_i, pic_newgametitl, 0, m_defshade, NULL, NULL, 1};
+MenuGroup joyaxessetupgroup = {65, 5, "^Cont'ler Axes", joyaxes_i, pic_newgametitl, 0, m_defshade, NULL, NULL, 1};
 
 
 static char MouseAxisFunctions[MAXMOUSEAXES][2][MAXAXISFUNCTIONLENGTH] = { {"", ""}, {"", ""} };
@@ -429,8 +429,8 @@ MenuItem inputsetup_i[] =
     {DefLayer(0, "Mouse Options", &mousegroup),OPT_XS,                 OPT_LINE(2), 1, m_defshade,0,NULL, MNU_MouseCheck, NULL},
     {DefLayer(0, "Mouse Buttons Setup", &mousesetupgroup),OPT_XS,      OPT_LINE(3),1,m_defshade,0,NULL,NULL,NULL},
     {DefLayer(0, "Mouse Axes Setup", &mouseaxesgroup),OPT_XS,          OPT_LINE(4),1,m_defshade,0,NULL,NULL,NULL},
-    {DefLayer(0, "Joystick Buttons Setup", &joybuttonssetupgroup),OPT_XS,OPT_LINE(6),1,m_defshade,0,NULL,MNU_JoystickCheck,MNU_JoystickButtonsInitialise},
-    {DefLayer(0, "Joystick Axes Setup", &joyaxessetupgroup), OPT_XS,   OPT_LINE(7),1,m_defshade,0,NULL,MNU_JoystickCheck,MNU_JoystickAxesInitialise},
+    {DefLayer(0, "Controller Buttons Setup", &joybuttonssetupgroup),OPT_XS,OPT_LINE(6),1,m_defshade,0,NULL,MNU_JoystickCheck,MNU_JoystickButtonsInitialise},
+    {DefLayer(0, "Controller Axes Setup", &joyaxessetupgroup), OPT_XS,   OPT_LINE(7),1,m_defshade,0,NULL,MNU_JoystickCheck,MNU_JoystickAxesInitialise},
     {DefOption(0, "Apply Modern Defaults"), OPT_XS,                    OPT_LINE(9),1,m_defshade,0,MNU_LoadModernDefaults,NULL,NULL},
     {DefOption(0, "Apply Classic Defaults"), OPT_XS,                   OPT_LINE(10),1,m_defshade,0,MNU_LoadClassicDefaults,NULL,NULL},
     {DefNone}
@@ -638,6 +638,7 @@ typedef enum {
 } DialogResponse;
 
 static DialogResponse MNU_Dialog(void);
+signed char MNU_InputString(char *, short);
 VOID LoadSaveMsg(char *msg);
 static VOID MNU_ItemPreProcess(MenuGroup *group);
 static void MNU_SelectItem(MenuGroup * group, short index, BOOL draw);
@@ -675,7 +676,6 @@ BOOL
 MNU_DoParentalPassword(UserCall UNUSED(call), MenuItem_p UNUSED(item))
     {
     short w,h;
-    signed char MNU_InputString(char *, short);
     static BOOL cur_show;
     char TempString[80];
     char *extra_text;
@@ -755,6 +755,11 @@ MNU_DoParentalPassword(UserCall UNUSED(call), MenuItem_p UNUSED(item))
         //CON_Message("Password = '%s'",gs.Password);
         //CON_Message("Passwordvalid = %d",passwordvalid);
 
+        if (!MenuInputMode)
+            {
+            return(TRUE);   // Prevent the 'Enter ... Password' prompts flashing up.
+            }
+        else
         if(gs.Password[0] != '\0' && passwordvalid == FALSE && currentmenu->cursor == 1)
             {
             sprintf(TempString,"Enter Old Password");
@@ -824,7 +829,6 @@ BOOL
 MNU_DoPlayerName(UserCall call, MenuItem_p item)
     {
     short w,h;
-    signed char MNU_InputString(char *, short);
     static BOOL cur_show;
     char TempString[80];
     char *extra_text;
@@ -1387,7 +1391,7 @@ static BOOL MNU_JoystickButtonSetupCustom(UserCall call, MenuItem *item)
 
     {
         short w, h = 0;
-        const char *s = "Joystick Setup";
+        const char *s = "Cont'ler Setup";
 
         rotatesprite(10 << 16, (5-3) << 16, MZ, 0, 2427,
             m_defshade, 0, MenuDrawFlags|ROTATE_SPRITE_CORNER, 0, 0, xdim - 1, ydim - 1);
@@ -1509,7 +1513,7 @@ static BOOL MNU_JoystickAxisSetupCustom(UserCall call, MenuItem *item)
 
     {
         short w, h = 0;
-        const char *s = "Joystick Axes";
+        const char *s = "Cont'ler Axes";
 
         rotatesprite(10 << 16, (5-3) << 16, MZ, 0, 2427,
             m_defshade, 0, MenuDrawFlags|ROTATE_SPRITE_CORNER, 0, 0, xdim - 1, ydim - 1);
@@ -2615,6 +2619,10 @@ MNU_InputString(char *name, short pix_width)
     {
     char ch;
     short w, h;
+    BOOL didinput = FALSE;
+
+    CONTROL_GetUserInput(&mnu_input);
+    CONTROL_ClearUserInput(&mnu_input);
 
 #define ascii_backspace 8
 #define ascii_esc 27
@@ -2660,10 +2668,23 @@ MNU_InputString(char *name, short pix_width)
         if (!isprint(ch))
             continue;
 
+        didinput = TRUE;
         MNU_MeasureString(name, &w, &h);
         if (w < pix_width)
             {
             sprintf(name, "%s%c", name, ch);
+            }
+        }
+
+    if (!didinput)
+        {
+        if (mnu_input.button0)
+            {
+            return(FALSE);
+            }
+        else if (mnu_input.button1)
+            {
+            return(-1);
             }
         }
 
@@ -2797,6 +2818,8 @@ MNU_GetSaveCustom(void)
     else
         {
         strcpy(BackupSaveGameDescr, SaveGameDescr[save_num]);
+        if (SaveGameDescr[save_num][0] == 0)
+            sprintf(SaveGameDescr[save_num], "GAME %d", save_num + 1);
 
         // clear keyboard buffer
         while (KB_KeyWaiting())
@@ -2889,18 +2912,21 @@ MNU_LoadSaveMove(UserCall UNUSED(call), MenuItem_p UNUSED(item))
 
         if (SavePrompt)
             {
-            if (KB_KeyPressed(sc_Y) || KB_KeyPressed(sc_Enter))
+            CONTROL_GetUserInput(&mnu_input);
+            CONTROL_ClearUserInput(&mnu_input);
+
+            if (KB_KeyPressed(sc_Y) || KB_KeyPressed(sc_Enter) || mnu_input.button0)
                 {
-		KB_ClearKeyDown(sc_Y);
-		KB_ClearKeyDown(sc_Enter);
+                KB_ClearKeyDown(sc_Y);
+                KB_ClearKeyDown(sc_Enter);
                 SavePrompt = FALSE;
                 // use input
                 item->custom();
                 }
             else
-            if (KB_KeyPressed(sc_N))
+            if (KB_KeyPressed(sc_N) || mnu_input.button1)
                 {
-		KB_ClearKeyDown(sc_N);
+                KB_ClearKeyDown(sc_N);
                 strcpy(SaveGameDescr[game_num], BackupSaveGameDescr);
                 SavePrompt = FALSE;
                 MenuInputMode = FALSE;
@@ -2926,7 +2952,7 @@ MNU_LoadSaveMove(UserCall UNUSED(call), MenuItem_p UNUSED(item))
                 {
                 GotInput = TRUE;
                 }
-	    KB_ClearKeyDown(sc_Enter);
+            KB_ClearKeyDown(sc_Enter);
             break;
         case TRUE:                      // Got input
             break;
@@ -2972,7 +2998,7 @@ MNU_LoadSaveDraw(UserCall call, MenuItem_p UNUSED(item))
             char tmp[sizeof(SaveGameDescr[0])];
 
             //cur_show ^= 1;
-	    cur_show = (totalclock & 32);
+            cur_show = (totalclock & 32);
             if (cur_show)
                 {
                 // add a cursor to the end
